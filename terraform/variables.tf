@@ -138,3 +138,13 @@ variable "alb_controller_service_account_namespace" {
     type = string
     default = "kube-system"
 }
+
+variable "backend_repo_name" {
+    type = string
+    default = "backend"
+} 
+
+variable "frontend_repo_name" {
+    type = string
+    default = "frontend"
+}

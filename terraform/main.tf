@@ -1,3 +1,35 @@
+resource "aws_ecr_repository" "backend" {
+    name = "${var.project_name}-${var.environment}-${var.backend_repo_name}"
+
+    image_tag_mutability = "MUTABLE"
+
+    image_scanning_configuration {
+        scan_on_push = true
+    }
+
+    tags = {
+        Name = "${var.project_name}-${var.environment}-${var.backend_repo_name}"
+        Component = "backend"
+    }
+}
+
+
+resource "aws_ecr_repository" "frontend" {
+    name = "${var.project_name}-${var.environment}-${var.frontend_repo_name}"
+
+    image_tag_mutability = "MUTABLE"
+
+    image_scanning_configuration {
+        scan_on_push = true
+    }
+
+    tags = {
+        Name = "${var.project_name}-${var.environment}-${var.frontend_repo_name}"
+        Component = "frontend"
+    }
+}
+
+
 module "vpc" {
     source = "./modules/vpc"
     vpc_cidr = var.vpc_cidr
