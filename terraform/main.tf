@@ -42,9 +42,28 @@ module "iam" {
     source = "./modules/iam"
     oidc_provider_arn = module.eks.oidc_provider_arn
     oidc_provider_url = module.eks.oidc_provider_url
-
+    
     service_account_name = var.alb_controller_service_account_name
     service_account_namespace = var.alb_controller_service_account_namespace
+
+    attach_alb_controller_policy = true
+    attach_secrets_manager_policy = false
+
+    project_name = var.project_name
+    environment = var.environment
+}
+
+module "backend_irsa" {
+    source = "./modules/iam"
+
+    oidc_provider_arn = module.eks.oidc_provider_arn
+    oidc_provider_url = module.eks.oidc_provider_url
+
+    service_account_name = "backend-sa"
+    service_account_namespace = "default"
+
+    attach_alb_controller_policy = false
+    attach_secrets_manager_policy = true
 
     project_name = var.project_name
     environment = var.environment

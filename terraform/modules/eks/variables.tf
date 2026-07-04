@@ -51,3 +51,9 @@ variable "project_name" {
 variable "environment" {
     
 }
+
+variable "cluster_log_types" {
+  description = "List of EKS control plane log types to enable (api, audit, authenticator, controllerManager, scheduler)"
+  type        = list(string)
+  default     = ["api", "audit", "authenticator", "controllerManager", "scheduler"]
+}

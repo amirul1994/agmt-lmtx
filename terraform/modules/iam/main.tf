@@ -1,4 +1,4 @@
-data "aws_iam_policy_document" "alb_controller_assume" {
+data "aws_iam_policy_document" "assume_role" {
     statement {
         actions = ["sts:AssumeRoleWithWebIdentity"]
         effect = "Allow"
@@ -17,18 +17,26 @@ data "aws_iam_policy_document" "alb_controller_assume" {
     }    
 }
 
-resource "aws_iam_role" "alb_controller" {
-    name = "${var.project_name}-${var.environment}-alb-controller"
+resource "aws_iam_role" "this" {
+    name = "${var.project_name}-${var.environment}-${var.service_account_name}-irsa"
 
-    assume_role_policy = data.aws_iam_policy_document.alb_controller_assume.json
+    assume_role_policy = data.aws_iam_policy_document.assume_role.json
 
     tags = {
-        Name = "${var.project_name}-${var.environment}-alb-controller"
+        Name = "${var.project_name}-${var.environment}-${var.service_account_name}-irsa"
     }
 }
 
 resource "aws_iam_role_policy_attachment" "alb_controller" {
+    count = var.attach_alb_controller_policy ? 1:0 
+    
     policy_arn = "arn:aws:iam::aws:policy/AmazonEKSLoadBalancerControllerPolicy"
 
-    role = aws_iam_role.alb_controller.name
+    role = aws_iam_role.this.name
+}
+
+resource "aws_iam_role_policy_attachment" "secrets_manager" {
+    count = var.attach_secrets_manager_policy ? 1:0
+    policy_arn = "arn:aws:iam::aws:policy/SecretsManagerReadWrite"
+    role = aws_iam_role.this.name
 }

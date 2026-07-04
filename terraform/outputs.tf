@@ -3,5 +3,9 @@ output "bastion_ssm_command" {
 }
 
 output "alb_controller_irsa_role_arn" {
-    value = module.iam.alb_controller_role_arn
+    value = module.iam.iam_role_arn
+}
+
+output "backend_irsa_role_arn" {
+    value = module.backend_irsa.iam_role_arn
 }

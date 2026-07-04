@@ -39,6 +39,8 @@ resource "aws_eks_cluster" "this" {
 
     role_arn = aws_iam_role.cluster.arn
 
+    enabled_cluster_log_types = var.cluster_log_types
+
     version = var.cluster_version
 
     vpc_config {
@@ -186,4 +188,13 @@ resource "aws_eks_node_group" "main" {
 
 data "aws_iam_openid_connect_provider" "cluster" {
     url = aws_eks_cluster.this.identity[0].oidc[0].issuer
+}
+
+resource "aws_cloudwatch_log_group" "eks" {
+    name = "aws/eks/${var.cluster_name}/cluster"
+    retention_in_days = 7
+
+    tags = {
+        Name = "${var.cluster_name}-cluster-logs"
+    }
 }
