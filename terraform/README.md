@@ -1831,11 +1831,12 @@ aws eks create-addon \
 - Create isolated Terraform configurations for each environment (e.g., dev/, staging/, prod/ folders) or use Terraform workspaces to manage distinct state files for each environment.
 
 **Handle Secrets**
-To handle secrets the approaches mentioned below can be followed
 
-- Store all sensitive data (RDS passwords, API keys) in Secrets Manager and reference them in Terraform using data sources. This keeps secrets out of state files and code while enabling automatic rotation and fine-grained IAM access control.
-- Store secrets in Vault's encrypted key-value store and retrieve them dynamically via Vault providers in Terraform or directly from applications using Vault Agent. Vault provides dynamic secrets, lease management, and audit logging for comprehensive security.
-- In gitops, use kubeseal to encrypt the secret, use the encrypted values in the kubenetes secret.
+- To handle secrets the approaches mentioned below can be followed
+
+  - Store all sensitive data (RDS passwords, API keys) in Secrets Manager and reference them in Terraform using data sources. This keeps secrets out of state files and code while enabling automatic rotation and fine-grained IAM access control.
+  - Store secrets in Vault's encrypted key-value store and retrieve them dynamically via Vault providers in Terraform or directly from applications using Vault Agent. Vault provides dynamic secrets, lease management, and audit logging for comprehensive security.
+  - In gitops, use kubeseal to encrypt the secret, use the encrypted values in the kubenetes secret.
 
 **What to check if terraform wants to recreate cluster**
 - Run 'terraform plan' and examine the diff: Look specifically for changes to cluster-critical resources like aws_eks_cluster, aws_eks_node_group, aws_vpc, aws_subnet, or aws_security_group. If any of these show forces replacement, the cluster will be recreated.
