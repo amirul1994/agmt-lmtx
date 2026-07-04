@@ -1718,3 +1718,91 @@ If everything is shown correct in terrform plan, excute the following command.
 ```bash
 terraform apply --auto-approve
 ```
+
+**After the cluster is provisioned do the following**
+
+```bash
+ssh -i ~/.ssh/myapp-key ubuntu@bastion_public_ip
+```
+
+Install aws cli, kubectl, eksctl and helm in the bastion. Execute aws configure with proper access key, secret key, region and output format.
+
+
+**Get kubeconfig**
+
+```bash
+aws eks update-kubeconfig \
+  --region us-east-1 \
+  --name myapp-production \
+  --kubeconfig ~/.kube/config
+```
+
+**Deploy AWS Alb Controller**
+
+```bash
+helm repo add eks https://aws.github.io/eks-charts
+
+helm repo update
+
+helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
+  -n kube-system \
+  --set clusterName=$(terraform output -raw eks_cluster_name) \
+  --set serviceAccount.create=false \
+  --set serviceAccount.name=aws-load-balancer-controller \
+  --set region=us-east-1 \
+  --set vpcId=$(terraform output -raw vpc_id)
+```
+
+**Enable Monitoring for Data Plane**
+
+```bash
+eksctl create iamserviceaccount \
+  --name cloudwatch-agent \
+  --namespace amazon-cloudwatch \
+  --cluster myapp-production \
+  --role-name AmazonCloudWatchObservabilityRole \
+  --attach-policy-arn arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy \
+  --role-only \
+  --approve
+```
+
+```bash
+
+ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+
+aws eks create-addon \
+  --addon-name amazon-cloudwatch-observability \
+  --cluster-name myapp-production \
+  --service-account-role-arn arn:aws:iam::${ACCOUNT_ID}:role/AmazonCloudWatchObservabilityRole
+```
+
+**Deploy Node Autoscaler**
+
+```bash
+
+helm repo add autoscaler https://kubernetes.github.io/autoscaler
+
+helm repo update
+
+helm install cluster-autoscaler autoscaler/cluster-autoscaler \
+  -n kube-system \
+  --set autoDiscovery.clusterName=myapp-production \
+  --set awsRegion=us-east-1 \
+  --set cloudProvider=aws \
+  --set rbac.serviceAccount.create=true \
+  --set rbac.serviceAccount.name=cluster-autoscaler \
+  --set extraArgs.expander=least-waste \
+  --set extraArgs.skip-nodes-with-local-storage=false \
+  --set extraArgs.balance-similar-node-groups=true \
+  --set awsUseStaticInstanceList=true \
+  --set extraArgs.node-group-auto-discovery="asg:tag=k8s.io/cluster-autoscaler/enabled,k8s.io/cluster-autoscaler/myapp-production"
+```
+
+**Enable Logging for Data Plane**
+
+```bash
+aws eks create-addon \
+  --addon-name amazon-cloudwatch-observability \
+  --cluster-name myapp-production \
+  --service-account-role-arn arn:aws:iam::YOUR_ACCOUNT_ID:role/AmazonCloudWatchObservabilityRole
+```
