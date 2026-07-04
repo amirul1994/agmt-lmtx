@@ -47,7 +47,7 @@ The secret is encrypted when it is stored via aws kms. The terraform execution r
 ![alt text](logicmatrix_eks_diagram.png) 
 
 For eks deployment, I have created modules. The terraform directory structure for is as follows -
-
+```text
 terraform/
 ├── backend.tf
 ├── provider.tf
@@ -81,7 +81,7 @@ terraform/
         ├── main.tf
         ├── variables.tf
         └── outputs.tf
-
+```
 
 
 **Architecture**
