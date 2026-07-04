@@ -1806,3 +1806,38 @@ aws eks create-addon \
   --cluster-name myapp-production \
   --service-account-role-arn arn:aws:iam::YOUR_ACCOUNT_ID:role/AmazonCloudWatchObservabilityRole
 ```
+
+**Upgrade EKS Cluster**
+
+- Review the kubernetes release notes, check for deprecated apis, ensure all addons (vpc cni, coredns, kube-proxy) are compatible with the target version. Perform a full test upgrade in the staging environment before upgrading prod cluster.
+- Upgrade the EKS control plane to the next minor version, then update any managed node groups and self‑managed nodes, followed by upgrading critical add‑ons (vpc cni, coredns, kube‑proxy, aws load balancer controller). Cordon and drain existing nodes to safely evict workloads before terminating them.
+- After the upgrade, verify cluster health and application functionality. If critical issues occur within 5 days of the upgrade, roll back the control plane to the previous version using the AWS Management Console, CLI, or API.
+
+
+**Add or Resize Node Pools**
+- Define a new managed node group in Terraform using the aws_eks_node_group resource, specifying instance type, desired/min/max size, and subnet IDs.
+-  For EKS managed node groups, modify the desired_size, min_size, or max_size values in the terraform configuration and run 'terraform apply'.
+
+**Maintain Terraform State**
+-  Always store your Terraform state file in a remote backend (like S3) with encryption and versioning enabled. This prevents local state loss and enables team collaboration.
+- Enable state locking (with DynamoDB or the new S3 native locking via use_lockfile = true) to prevent concurrent modifications that can corrupt the state.
+- Enable versioning on the state bucket for automatic rollback.
+
+**Avoid Downtime During Cluster Changes**
+- Use a managed node group with a rolling update strategy (e.g., update_config with max_unavailable and max_surge). This ensures nodes are cordoned, drained, and replaced gradually while maintaining application capacity.
+- Implement Pod Disruption Budgets (PDBs) and horizontal Pod Autoscaling (HPA) to define how many pods can be down at a time. Use multiple availability zones and spread pods across nodes to tolerate node failures and updates.
+
+**Separate dev, staging, and production**
+- Create isolated Terraform configurations for each environment (e.g., dev/, staging/, prod/ folders) or use Terraform workspaces to manage distinct state files for each environment.
+
+**Handle Secrets**
+To handle secrets the approaches mentioned below can be followed
+
+- Store all sensitive data (RDS passwords, API keys) in Secrets Manager and reference them in Terraform using data sources. This keeps secrets out of state files and code while enabling automatic rotation and fine-grained IAM access control.
+- Store secrets in Vault's encrypted key-value store and retrieve them dynamically via Vault providers in Terraform or directly from applications using Vault Agent. Vault provides dynamic secrets, lease management, and audit logging for comprehensive security.
+- In gitops, use kubeseal to encrypt the secret, use the encrypted values in the kubenetes secret.
+
+**What to check if terraform wants to recreate cluster**
+- Run 'terraform plan' and examine the diff: Look specifically for changes to cluster-critical resources like aws_eks_cluster, aws_eks_node_group, aws_vpc, aws_subnet, or aws_security_group. If any of these show forces replacement, the cluster will be recreated.
+- Check for immutable changes, common causes include changing version (Kubernetes version) for the EKS cluster, changing cidr_block for VPC/subnets, modifying name or role_arn of the cluster, or updating instance_type or disk_size in a managed node group without a rolling update strategy.
+- Run 'terraform state show <resource>' to see what's currently deployed and review the resource's lifecycle settings (create_before_destroy, prevent_destroy). Use terraform refresh to sync the state with the actual infrastructure before checking the plan.
